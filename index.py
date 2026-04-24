@@ -3,6 +3,9 @@ import datetime
 
 app = Flask(__name__)
 
+# Salviamo i log in memoria (Nota: su Vercel questa memoria si azzera periodicamente)
+logs_in_memory = []
+
 @app.route('/api/stats', methods=['POST', 'OPTIONS'])
 def receive_stats():
     # Gestione preflight requests per CORS (opzionale ma utile)
@@ -14,19 +17,32 @@ def receive_stats():
         if not data:
             return jsonify({"error": "Nessun dato fornito"}), 400
         
-        # Qui potresti salvare i dati in un database cloud (es. MongoDB, Supabase)
-        # Per ora stampiamo semplicemente il log nel server
-        print(f"[{datetime.datetime.now()}] Statistiche ricevute da {data.get('nome_pc', 'Sconosciuto')}:", data)
+        # Aggiungiamo il timestamp e salviamo nella lista dell'API
+        log_entry = {
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "data": data
+        }
+        logs_in_memory.append(log_entry)
+        
+        print(f"[{log_entry['timestamp']}] Statistiche ricevute da {data.get('nome_pc', 'Sconosciuto')}")
         
         return jsonify({
             "status": "success",
-            "message": "Statistiche ricevute correttamente",
+            "message": "Statistiche salvate nell'API",
             "data_received": data
         }), 200
         
     except Exception as e:
         print("Errore nel salvataggio statistiche:", e)
         return jsonify({"error": "Errore interno del server", "details": str(e)}), 500
+
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    # Ritorna tutti i log salvati in memoria
+    return jsonify({
+        "totale_scansioni": len(logs_in_memory),
+        "logs": logs_in_memory
+    }), 200
 
 @app.route('/', methods=['GET'])
 def home():
