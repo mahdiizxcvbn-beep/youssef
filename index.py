@@ -8,9 +8,13 @@ logs_in_memory = []
 
 @app.route('/api/stats', methods=['POST', 'OPTIONS'])
 def receive_stats():
-    # Gestione preflight requests per CORS (opzionale ma utile)
+    # Gestione preflight requests per CORS
     if request.method == 'OPTIONS':
-        return jsonify({}), 200
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        return response, 200
 
     try:
         data = request.get_json()
@@ -26,23 +30,35 @@ def receive_stats():
         
         print(f"[{log_entry['timestamp']}] Statistiche ricevute da {data.get('nome_pc', 'Sconosciuto')}")
         
-        return jsonify({
+        resp = jsonify({
             "status": "success",
             "message": "Statistiche salvate nell'API",
             "data_received": data
-        }), 200
+        })
+        resp.headers.add('Access-Control-Allow-Origin', '*')
+        return resp, 200
         
     except Exception as e:
         print("Errore nel salvataggio statistiche:", e)
-        return jsonify({"error": "Errore interno del server", "details": str(e)}), 500
+        resp = jsonify({"error": "Errore interno del server", "details": str(e)})
+        resp.headers.add('Access-Control-Allow-Origin', '*')
+        return resp, 500
 
-@app.route('/api/logs', methods=['GET'])
+@app.route('/api/logs', methods=['GET', 'OPTIONS'])
 def get_logs():
-    # Ritorna tutti i log salvati in memoria
-    return jsonify({
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        return response, 200
+
+    resp = jsonify({
         "totale_scansioni": len(logs_in_memory),
         "logs": logs_in_memory
-    }), 200
+    })
+    resp.headers.add('Access-Control-Allow-Origin', '*')
+    return resp, 200
 
 @app.route('/', methods=['GET'])
 def home():
